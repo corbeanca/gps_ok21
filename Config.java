@@ -23,7 +23,6 @@ public class Config extends AppCompatActivity {
 
     RadioGroup rg;
     RadioButton rb;
-// bla bal
     String hour_s1;
     String hour_s2 ;
     String st;
