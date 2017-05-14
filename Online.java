@@ -48,7 +48,6 @@ public class Online extends Activity
         checkPin();
        // pinView.setImageResource();
 
-
         list_shape= (ListView) findViewById(R.id.list_shapes);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,shapes);
         list_shape.setAdapter(adapter);

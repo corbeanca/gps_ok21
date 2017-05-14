@@ -1,5 +1,6 @@
 package a_barbu.gps_agenda;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -36,7 +37,7 @@ public class SignIn extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView( R.layout.activity_signin);
+        setContentView( R.layout.activity_main);
         mAuth = FirebaseAuth.getInstance();
         mGoogleBtn = (SignInButton) findViewById( R.id.googleBtn);
         mAuthListener = new FirebaseAuth.AuthStateListener() {
