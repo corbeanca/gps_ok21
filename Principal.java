@@ -34,6 +34,9 @@ import java.util.List;
 public class Principal extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, View.OnClickListener {
 
+
+
+
     GoogleMap mGoogleMap ;
 
     @Override
@@ -126,7 +129,9 @@ public class Principal extends AppCompatActivity
         //navigare pagini
         int id = item.getItemId();
 
-        if (id == R.id.nav_online) {
+        if (id == R.id.nav_main) {
+
+        } else if (id == R.id.nav_online) {
             startActivity(new Intent(Principal.this,Online.class));
         } else if (id == R.id.nav_slideshow) {
 

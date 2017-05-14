@@ -14,6 +14,8 @@
         import android.widget.RadioButton;
         import android.widget.RadioGroup;
         import android.widget.Toast;
+
+        import java.sql.Time;
         import java.text.ParseException;
         import java.text.SimpleDateFormat;
         import java.util.Calendar;
@@ -24,12 +26,13 @@ public class Config extends AppCompatActivity {
     RadioGroup rg;
     RadioButton rb;
     String hour_s1;
-    String hour_s2 ;
+    String hour_s2;
     String st;
     String mes;
     SimpleDateFormat set1 = new SimpleDateFormat("HH:mm");
     SimpleDateFormat set2 = new SimpleDateFormat("HH:mm");
     ImageView default_move;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,14 +42,16 @@ public class Config extends AppCompatActivity {
 //            Toast.makeText(getBaseContext(), colors[i], Toast.LENGTH_LONG).show();
 //        }
         rg = (RadioGroup) findViewById(R.id.rgroup);
+        default_move = (ImageView) findViewById(R.id.default_photo);
+        showMove();
+
         setupSaveButton();
-        default_move =(ImageView)findViewById(R.id.default_photo);
     }
 
-    private void setupSaveButton(){
+    private void setupSaveButton() {
         Button save = (Button) findViewById(R.id.button2);
-        EditText  h1 =  (EditText) findViewById(R.id.hour_start);
-        EditText  h2 =  (EditText) findViewById(R.id.hour_stop);
+        EditText h1 = (EditText) findViewById(R.id.hour_start);
+        EditText h2 = (EditText) findViewById(R.id.hour_stop);
         st = showH(1);
         h1.setText(st);
         st = showH(2);
@@ -55,19 +60,17 @@ public class Config extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Toast.makeText(Config.this, "Settings saved!", Toast.LENGTH_SHORT).show();
-                EditText  h1 =  (EditText) findViewById(R.id.hour_start);
+                EditText h1 = (EditText) findViewById(R.id.hour_start);
                 hour_s1 = h1.getText().toString();
-                EditText  h2 =  (EditText) findViewById(R.id.hour_stop);
+                EditText h2 = (EditText) findViewById(R.id.hour_stop);
                 hour_s2 = h2.getText().toString();
-                try{
+
+                try {
                     set1.parse(hour_s1);
                     set2.parse(hour_s2);
                     Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();
-
-                }
-                catch (ParseException e) {
+                } catch (ParseException e) {
                     Toast.makeText(Config.this, "Nu a mers parsarea timpului, introduceti din nou respectand formatul", Toast.LENGTH_LONG).show();
-
                 }
                 setTime();
                 startOnline();
@@ -81,17 +84,17 @@ public class Config extends AppCompatActivity {
     private void startOnline() {
         Calendar calendar = Calendar.getInstance();
 
-        Intent intent = new Intent(getApplicationContext(),Notif_receiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(),100,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent intent = new Intent(getApplicationContext(), Notif_receiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),AlarmManager.INTERVAL_DAY,pendingIntent);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
         //  testare --- merge !
         // calendar.set(Calendar.HOUR_OF_DAY, 11);
         //  calendar.set(Calendar.MINUTE,31);
 
     }
 
-    public void select_def_transp (View v){
+    public void select_def_transp(View v) {
         int radiobuttonid = rg.getCheckedRadioButtonId();
         rb = (RadioButton) findViewById(radiobuttonid);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -99,11 +102,11 @@ public class Config extends AppCompatActivity {
         editor.putInt("Movement", radiobuttonid);
         editor.commit();
 
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.config_car:
                 default_move.setImageResource(R.mipmap.car);
                 break;
-            case  R.id.config_bicycle:
+            case R.id.config_bicycle:
                 default_move.setImageResource(R.mipmap.bicycle);
                 break;
             case R.id.config_transit:
@@ -120,7 +123,7 @@ public class Config extends AppCompatActivity {
     //     boolean checked = ( RadioButton) v;
     // }
 
-    private void setTime (){
+    private void setTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("hour_start", hour_s1);
@@ -129,16 +132,36 @@ public class Config extends AppCompatActivity {
         editor.commit();
     }
 
-    private String showH( int i) {
+    private String showH(int i) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         String h1 = null;
-        if (i ==1 )
-            return h1 = sp.getString("hour_start", "08:00") ;
+        if (i == 1)
+            return h1 = sp.getString("hour_start", "08:00");
         else return h1 = sp.getString("hour_stop", "22:00");
 
 
     }
 
+    //   public Time savetime (Time)
+
+    public void showMove() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        int move = sharedPref.getInt("Movement", 0);
+        switch (move) {
+            case R.id.config_car:
+                default_move.setImageResource(R.mipmap.car);
+                break;
+            case R.id.config_bicycle:
+                default_move.setImageResource(R.mipmap.bicycle);
+                break;
+            case R.id.config_transit:
+                default_move.setImageResource(R.mipmap.transit);
+                break;
+            case R.id.config_walk:
+                default_move.setImageResource(R.mipmap.walk);
+                break;
+        }
 
 
+    }
 }
