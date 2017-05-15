@@ -145,6 +145,40 @@ public class Online extends Activity
         editor.commit();
     }
 
+    public String pinXML(String shape, String color){
+        switch(shape){
+            case "circle":
+                switch (color){
+                    case "red": return "circle_red.xml";
+                    case "green": return "circle_green";
+                    case "blue": return "circle_blue";
+                    case "yellow": return "circle_yellow";
+                }
+            case "square":
+                switch (color){
+                    case "red": return "square_red.xml";
+                    case "green": return "square_green";
+                    case "blue": return "square_blue";
+                    case "yellow": return "square_yellow";
+                }
+            case "shield":
+                switch (color) {
+                    case "red":
+                        return "shield_red.xml";
+                    case "green":
+                        return "shield_green";
+                    case "blue":
+                        return "shield_blue";
+                    case "yellow":
+                        return "shield_yellow";
+                }
+        }
+        return null;
+    }
+
+
+
+
     public void seekbar (final int that){
 
         if (that == 1){

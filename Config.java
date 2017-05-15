@@ -65,10 +65,11 @@ public class Config extends AppCompatActivity {
                 EditText h2 = (EditText) findViewById(R.id.hour_stop);
                 hour_s2 = h2.getText().toString();
 
-                try {
+                //adaugat conditie parsare timp
+                try {if (hour_s1  != null && hour_s2 != null){
                     set1.parse(hour_s1);
                     set2.parse(hour_s2);
-                    Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();
+                    Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();}
                 } catch (ParseException e) {
                     Toast.makeText(Config.this, "Nu a mers parsarea timpului, introduceti din nou respectand formatul", Toast.LENGTH_LONG).show();
                 }
