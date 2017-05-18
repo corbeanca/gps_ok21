@@ -1,10 +1,12 @@
 package a_barbu.gps_agenda;
 
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
@@ -14,6 +16,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -24,6 +29,8 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -37,7 +44,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -47,17 +53,23 @@ import java.io.IOException;
 import java.util.List;
 
 public class Principal extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, View.OnClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
+        implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, View.OnClickListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
 
 
-
+        String memo;
     GoogleMap mGoogleMap ;
     GoogleApiClient mGoogleApi;
+  static   String locality;
+    static double lat;
+    static double lng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
 
     //testare conexiune google play services
     if (googleServicesAvailable()) {
@@ -76,8 +88,9 @@ public class Principal extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "PIN Saved", Snackbar.LENGTH_SHORT)
-                        .setAction("Action", null).show();
+//                Snackbar.make(view, "PIN Saved", Snackbar.LENGTH_SHORT)
+//                        .setAction("Action", null).show();
+                startActivityForResult(new Intent(Principal.this,PopMarker.class),101);
             }
         });
 
@@ -114,7 +127,7 @@ public class Principal extends AppCompatActivity
         return super.onCreateOptionsMenu(menu);
     }
 
-
+    // map_type
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.mapTypeNone:
@@ -147,7 +160,7 @@ public class Principal extends AppCompatActivity
         if (id == R.id.nav_main) {
 
         } else if (id == R.id.nav_pref) {
-            startActivity(new Intent(Principal.this,Online.class));
+            startActivity(new Intent(Principal.this,Preferences.class));
         } else if (id == R.id.nav_slideshow) {
 
         } else if (id == R.id.nav_config) {
@@ -169,6 +182,38 @@ public class Principal extends AppCompatActivity
         mGoogleMap = googleMap;
    //     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
      //       if (checkSelfPermission(Manifest.permission.ACC))
+        if (mGoogleMap !=null){
+            mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+                @Override
+                public View getInfoWindow(Marker marker) {
+                    return null;
+                }
+
+                @Override
+                public View getInfoContents(Marker marker) {
+                    View v = getLayoutInflater().inflate(R.layout.pin_window,null);
+                    TextView tvLocality = (TextView) v.findViewById(R.id.pin_w_locality);
+                    EditText tvSnippet = (EditText) v.findViewById(R.id.pin_w_memo);
+                    if(memo !=null)
+
+                    tvLocality.setText(marker.getTitle());
+                    tvSnippet.setText(marker.getSnippet());
+
+                    return v;
+                }
+
+
+            });
+            mGoogleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+                @Override
+                public void onInfoWindowClick(Marker marker) {
+
+                          startActivityForResult(new Intent(Principal.this,PopMarker.class),101);
+                       }
+
+            });
+
+        }
 
         mGoogleMap.setMyLocationEnabled(true);
        // zoomLocation(39.02, 89.3, 12);
@@ -215,30 +260,43 @@ public class Principal extends AppCompatActivity
         double lat = adress.getLatitude();
         double lng = adress.getLongitude();
         zoomLocation(lat, lng, 15);
+        Principal.locality = locality;
+        Principal.lat= lat;
+        Principal.lng = lng;
 
-        setMarker(locality, lat, lng);
-
+        setMarker_i(locality, lat, lng,memo);
     }
 
-    private void setMarker(String locality, double lat, double lng) {
+    private void setMarker_i(String locality, double lat, double lng, String memo) {
+
+        setMarker(locality, lat, lng,memo);
+    }
+
+
+    private void setMarker(String locality, double lat, double lng,String memo) {
         if (marker != null){
             marker.remove();
         }
         Bitmap drawableBitmap = getBitmap(R.drawable.shield_blue);
+        scaleBitmap( drawableBitmap, 50,50);
+     //   EditText memo = (EditText) findViewById(R.id.pin_w_memo);
+     //   memo.setText("test");
 
         MarkerOptions optionsMark = new MarkerOptions()
                 .title(locality)
                 .position(new LatLng( lat, lng))
                .icon(BitmapDescriptorFactory.fromBitmap(drawableBitmap))
                 //memo pt snippet
-                //.snippet( pin_memo = new String())
+
+                .snippet(memo)
         ;
         marker = mGoogleMap.addMarker(optionsMark);
+
     }
 
     @Override
     public void onClick(View v) {
-
+        startActivityForResult(new Intent(Principal.this,PopMarker.class),101);
     }
 LocationRequest mLocationRequest;
 
@@ -276,7 +334,7 @@ LocationRequest mLocationRequest;
     public Bitmap getBitmap(int drawableRes) {
         Drawable drawable = getResources().getDrawable(drawableRes);
         Canvas canvas = new Canvas();
-        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888);
         canvas.setBitmap(bitmap);
         drawable.setBounds(0,0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
 
@@ -285,4 +343,24 @@ LocationRequest mLocationRequest;
 
     }
 
+    public static Bitmap scaleBitmap(Bitmap bitmap, int wantedWidth, int wantedHeight) {
+        Bitmap output = Bitmap.createBitmap(wantedWidth, wantedHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        Matrix m = new Matrix();
+        m.setScale((float) wantedWidth / bitmap.getWidth(), (float) wantedHeight / bitmap.getHeight());
+        canvas.drawBitmap(bitmap, m, new Paint());
+
+        return output;
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+          if(requestCode== 101 &&resultCode == RESULT_OK){
+              memo=(data.getStringExtra("memo"));
+              setMarker(Principal.locality, Principal.lat, Principal.lng, memo);
+
+          }
+        //super.onActivityResult(requestCode, resultCode, data);
+    }
 }

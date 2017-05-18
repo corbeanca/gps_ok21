@@ -18,7 +18,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class Online extends Activity
+public class Preferences extends Activity
        implements AdapterView.OnItemClickListener
 
 {   RadioGroup rg_batt;
@@ -27,6 +27,7 @@ public class Online extends Activity
     ListView list_shape;
     SeekBar  seek_acc;
     SeekBar  seek_radius;
+
     static boolean batt;
     int pos=2;
     int sh=1;
@@ -36,10 +37,10 @@ public class Online extends Activity
     protected void onCreate(Bundle savedInstanceState) {
          super.onCreate(savedInstanceState);
         rg_batt = (RadioGroup) findViewById(R.id.rg_bat);
-        try{
-        rb = (RadioButton) findViewById(checkBatt());}
-        catch (NullPointerException e){}
-        setContentView(R.layout.fragment_online);
+//        try{
+//        rb = (RadioButton) findViewById(checkBatt());}
+//        catch (NullPointerException e){}
+        setContentView(R.layout.fragment_pref);
         String colors[]= getResources().getStringArray(R.array.online_color);
         String shapes[]= getResources().getStringArray(R.array.online_shape);
 
@@ -49,11 +50,11 @@ public class Online extends Activity
        // pinView.setImageResource();
 
         list_shape= (ListView) findViewById(R.id.list_shapes);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,shapes);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,shapes);
         list_shape.setAdapter(adapter);
         list_shape.setOnItemClickListener(this);
         list_color= (ListView) findViewById(R.id.list_color);
-        ArrayAdapter<String> adapter2 = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,colors);
+        ArrayAdapter<String> adapter2 = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,colors);
         list_color.setAdapter(adapter2);
         list_color.setOnItemClickListener(this);
 
@@ -66,7 +67,7 @@ public class Online extends Activity
         save.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View v) {
-                                        startActivity(new Intent(Online.this,Principal.class));
+                                        startActivity(new Intent(Preferences.this,Principal.class));
                                     }
                                 }
         );
@@ -195,13 +196,13 @@ public class Online extends Activity
 
                     @Override
                     public void onStartTrackingTouch(SeekBar seekBar) {
-                      //  Toast.makeText(Online.this,"SeekBar sus",Toast.LENGTH_LONG).show();
+                      //  Toast.makeText(Preferences.this,"SeekBar sus",Toast.LENGTH_LONG).show();
                     }
 
                     @Override
                     public void onStopTrackingTouch(SeekBar seekBar) {
 //                        text_view.setText("Covered : " + progress_value + " / " +seek_bar.getMax());
-                        Toast.makeText(Online.this,"SeekBar salvat sus",Toast.LENGTH_LONG).show();
+                        Toast.makeText(Preferences.this,"SeekBar salvat sus",Toast.LENGTH_LONG).show();
                         saveSeek(that,progress_value);
                     }
                 }
@@ -218,13 +219,13 @@ public class Online extends Activity
 
                     @Override
                     public void onStartTrackingTouch(SeekBar seekBar) {
-                       // Toast.makeText(Online.this,"SeekBar jos",Toast.LENGTH_LONG).show();
+                       // Toast.makeText(Preferences.this,"SeekBar jos",Toast.LENGTH_LONG).show();
                     }
 
                     @Override
                     public void onStopTrackingTouch(SeekBar seekBar) {
 //                        text_view.setText("Covered : " + progress_value + " / " +seek_bar.getMax());
-                        Toast.makeText(Online.this,"SeekBar salvat jos",Toast.LENGTH_LONG).show();
+                        Toast.makeText(Preferences.this,"SeekBar salvat jos",Toast.LENGTH_LONG).show();
                         saveSeek(that,progress_value);
                     }
                 }
