@@ -1,6 +1,5 @@
-        package a_barbu.gps_agenda;
-
-        import android.app.AlarmManager;
+package a_barbu.gps_agenda;
+import android.app.AlarmManager;
         import android.app.PendingIntent;
         import android.content.Intent;
         import android.content.SharedPreferences;
@@ -14,8 +13,6 @@
         import android.widget.RadioButton;
         import android.widget.RadioGroup;
         import android.widget.Toast;
-
-        import java.sql.Time;
         import java.text.ParseException;
         import java.text.SimpleDateFormat;
         import java.util.Calendar;
@@ -28,7 +25,6 @@ public class Config extends AppCompatActivity {
     String hour_s1;
     String hour_s2;
     String st;
-    String mes;
     SimpleDateFormat set1 = new SimpleDateFormat("HH:mm");
     SimpleDateFormat set2 = new SimpleDateFormat("HH:mm");
     ImageView default_move;
@@ -37,15 +33,17 @@ public class Config extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.config);
-//        String colors[]= getResources().getStringArray(R.array.online_color);
-//        for (int i = 0; i < colors.length; i++) {
-//            Toast.makeText(getBaseContext(), colors[i], Toast.LENGTH_LONG).show();
-//        }
+
         rg = (RadioGroup) findViewById(R.id.rgroup);
         default_move = (ImageView) findViewById(R.id.default_photo);
         showMove();
 
         setupSaveButton();
+        checkNewUser();
+    }
+
+    private void checkNewUser() {
+
     }
 
     private void setupSaveButton() {
@@ -71,7 +69,7 @@ public class Config extends AppCompatActivity {
                     set2.parse(hour_s2);
                     Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();}
                 } catch (ParseException e) {
-                    Toast.makeText(Config.this, "Nu a mers parsarea timpului, introduceti din nou respectand formatul", Toast.LENGTH_LONG).show();
+                    Toast.makeText(Config.this, "Nu a mers parsarea timpului, introduceti din nou respectand formatul " , Toast.LENGTH_LONG).show();
                 }
                 setTime();
                 startOnline();
@@ -120,30 +118,23 @@ public class Config extends AppCompatActivity {
 
     }
 
-    //public void SelectMove(View v){
-    //     boolean checked = ( RadioButton) v;
-    // }
-
     private void setTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("hour_start", hour_s1);
         editor.putString("hour_stop", hour_s2);
-        // vreau cu commit in loc de apply pentru ca sa mi modifice instant programu
+        // vreau cu commit in loc de apply ca sa mi modifice instant programul
         editor.commit();
     }
 
     private String showH(int i) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        String h1 = null;
         if (i == 1)
-            return h1 = sp.getString("hour_start", "08:00");
-        else return h1 = sp.getString("hour_stop", "22:00");
+            return  sp.getString("hour_start", "08:00");
+        else return  sp.getString("hour_stop", "22:00");
 
 
     }
-
-    //   public Time savetime (Time)
 
     public void showMove() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -151,18 +142,44 @@ public class Config extends AppCompatActivity {
         switch (move) {
             case R.id.config_car:
                 default_move.setImageResource(R.mipmap.car);
+                rb = (RadioButton) findViewById(R.id.config_car) ;
+                rb.setChecked(true);
                 break;
             case R.id.config_bicycle:
                 default_move.setImageResource(R.mipmap.bicycle);
+                rb = (RadioButton) findViewById(R.id.config_bicycle) ;
+                rb.setChecked(true);
                 break;
             case R.id.config_transit:
                 default_move.setImageResource(R.mipmap.transit);
+                rb = (RadioButton) findViewById(R.id.config_transit) ;
+                rb.setChecked(true);
                 break;
             case R.id.config_walk:
                 default_move.setImageResource(R.mipmap.walk);
+                rb = (RadioButton) findViewById(R.id.config_walk) ;
+                rb.setChecked(true);
                 break;
         }
 
 
     }
+
+    public void Sync(View v){
+
+   // if (flag_1)
+        Toast.makeText(Config.this, "Settings uploaded" , Toast.LENGTH_LONG).show();
+    //    else
+            Toast.makeText(Config.this, "Do you want to override settings on cloud?" , Toast.LENGTH_LONG).show();
+            Toast.makeText(Config.this, "Settings downloaded" , Toast.LENGTH_LONG).show();
+   // if (flag_2)
+        Toast.makeText(Config.this, "Nothing present on cloud " , Toast.LENGTH_LONG).show();
+   // if (flag_3)
+        Toast.makeText(Config.this, "Succesfully retrieved data " , Toast.LENGTH_LONG).show();
+
+    }
+
+
+
+
 }

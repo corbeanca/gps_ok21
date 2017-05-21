@@ -3,15 +3,19 @@ package a_barbu.gps_agenda;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -45,6 +49,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -58,13 +64,17 @@ public class Principal extends AppCompatActivity
 
 
 
-        String memo;
+    String memo;
     GoogleMap mGoogleMap ;
     GoogleApiClient mGoogleApi;
-  static   String locality;
-    static double lat;
-    static double lng;
-
+    String locality;
+    double lat;
+    double lng;
+    int radius;
+    int accuracy;
+    int model;
+    int pinsize;
+    BitmapDrawable bitmapdraw;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,7 +90,7 @@ public class Principal extends AppCompatActivity
         else {
         Toast.makeText(this, " Maps Service not supported",Toast.LENGTH_LONG).show();
     }
-
+        model = ShowPref("model");
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -102,6 +112,9 @@ public class Principal extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        radius=ShowPref("default_radius");
+        accuracy=ShowPref("default_accuracy");
+        pinsize=ShowPref("default_pinsize");
 
            }
 
@@ -116,7 +129,7 @@ public class Principal extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            remove();
         }
     }
 
@@ -183,6 +196,40 @@ public class Principal extends AppCompatActivity
    //     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
      //       if (checkSelfPermission(Manifest.permission.ACC))
         if (mGoogleMap !=null){
+
+            mGoogleMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+                @Override
+                public void onMarkerDragStart(Marker marker) {
+                circle_radius.remove();
+
+                }
+
+                @Override
+                public void onMarkerDrag(Marker marker) {
+
+                }
+
+                @Override
+                public void onMarkerDragEnd(Marker marker) {
+                Geocoder gc = new Geocoder(Principal.this);
+                    LatLng ll = marker.getPosition();
+                    double lat = ll.latitude;
+                    double lng = ll.longitude;
+                    List<Address> list = null;
+                    try {
+                        list = gc.getFromLocation(lat,lng,1);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Address add = list.get(0);
+                    marker.setTitle(add.getLocality());
+                    marker.showInfoWindow();
+                    circle_radius=drawRadius(ll);
+                    updateCoord(lat,lng);
+                    // mai trebuie coborat 100 pixeli pe tinta
+                }
+            });
+
             mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
                 @Override
                 public View getInfoWindow(Marker marker) {
@@ -194,7 +241,7 @@ public class Principal extends AppCompatActivity
                     View v = getLayoutInflater().inflate(R.layout.pin_window,null);
                     TextView tvLocality = (TextView) v.findViewById(R.id.pin_w_locality);
                     EditText tvSnippet = (EditText) v.findViewById(R.id.pin_w_memo);
-                    if(memo !=null)
+                    // if(memo !=null)
 
                     tvLocality.setText(marker.getTitle());
                     tvSnippet.setText(marker.getSnippet());
@@ -212,6 +259,18 @@ public class Principal extends AppCompatActivity
                        }
 
             });
+            mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+                @Override
+                public void onMapLongClick(LatLng latLng) {
+
+                    MarkerObj newMarkerObj = new MarkerObj(lat,lng,locality,radius,accuracy,null,memo,model);
+                    int id = ShowPref("ID");
+                    newMarkerObj.setID(id);
+                    id=id+1;
+                    SavePref("ID",id);
+                    Toast.makeText(Principal.this, "Marker added" , Toast.LENGTH_LONG).show();
+                }
+            });
 
         }
 
@@ -223,6 +282,11 @@ public class Principal extends AppCompatActivity
                 .addOnConnectionFailedListener(this)
                 .build();
         mGoogleApi.connect();
+    }
+
+    private void updateCoord(double lat, double lng) {
+        this.lng=lng;
+        this.lat=lat;
     }
 
     private void zoomLocation(double lat, double lng, float zoom){
@@ -260,9 +324,9 @@ public class Principal extends AppCompatActivity
         double lat = adress.getLatitude();
         double lng = adress.getLongitude();
         zoomLocation(lat, lng, 15);
-        Principal.locality = locality;
-        Principal.lat= lat;
-        Principal.lng = lng;
+        this.locality = locality;
+        this.lat= lat;
+        this.lng = lng;
 
         setMarker_i(locality, lat, lng,memo);
     }
@@ -272,28 +336,54 @@ public class Principal extends AppCompatActivity
         setMarker(locality, lat, lng,memo);
     }
 
-
+    Circle circle_radius;
     private void setMarker(String locality, double lat, double lng,String memo) {
         if (marker != null){
-            marker.remove();
+            remove();
         }
-        Bitmap drawableBitmap = getBitmap(R.drawable.shield_blue);
-        scaleBitmap( drawableBitmap, 50,50);
+
+        setImage(model);
+        Bitmap b=bitmapdraw.getBitmap();
+        Bitmap smallMarker = Bitmap.createScaledBitmap(b, 100 + 100*pinsize, 100 +100*pinsize, false);
      //   EditText memo = (EditText) findViewById(R.id.pin_w_memo);
      //   memo.setText("test");
 
         MarkerOptions optionsMark = new MarkerOptions()
                 .title(locality)
+                .draggable(true)
                 .position(new LatLng( lat, lng))
-               .icon(BitmapDescriptorFactory.fromBitmap(drawableBitmap))
+               .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
                 //memo pt snippet
 
                 .snippet(memo)
         ;
         marker = mGoogleMap.addMarker(optionsMark);
-
+        circle_radius = drawRadius(new LatLng( lat, lng));
     }
 
+    private Circle drawRadius(LatLng latLng) {
+        CircleOptions opt = new CircleOptions()
+                .center(latLng)
+                .radius(radius*200)
+                .fillColor(0x33BCCBD8)
+                .strokeColor(Color.BLUE)
+                .strokeWidth(4);
+        return mGoogleMap.addCircle(opt);
+    }
+
+    private void remove(){
+        marker.remove();
+        marker = null;
+        circle_radius.remove();
+        circle_radius = null;
+    }
+
+    public void updateRadius(){
+        circle_radius.remove();
+        circle_radius = null;
+        LatLng latLng = new LatLng(lat,lng);
+        drawRadius(latLng);
+        }
     @Override
     public void onClick(View v) {
         startActivityForResult(new Intent(Principal.this,PopMarker.class),101);
@@ -331,36 +421,107 @@ LocationRequest mLocationRequest;
 
     }
 
-    public Bitmap getBitmap(int drawableRes) {
-        Drawable drawable = getResources().getDrawable(drawableRes);
-        Canvas canvas = new Canvas();
-        Bitmap bitmap = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888);
-        canvas.setBitmap(bitmap);
-        drawable.setBounds(0,0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+//    public Bitmap getBitmap(int drawableRes) {
+//        Drawable drawable = getResources().getDrawable(drawableRes);
+//        Canvas canvas = new Canvas();
+//        Bitmap bitmap = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888);
+//        canvas.setBitmap(bitmap);
+//        drawable.setBounds(0,0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+//
+//        drawable.draw(canvas);
+//       return bitmap;
+//
+//    }
 
-        drawable.draw(canvas);
-       return bitmap;
-
-    }
-
-    public static Bitmap scaleBitmap(Bitmap bitmap, int wantedWidth, int wantedHeight) {
-        Bitmap output = Bitmap.createBitmap(wantedWidth, wantedHeight, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(output);
-        Matrix m = new Matrix();
-        m.setScale((float) wantedWidth / bitmap.getWidth(), (float) wantedHeight / bitmap.getHeight());
-        canvas.drawBitmap(bitmap, m, new Paint());
-
-        return output;
-    }
+//    public static Bitmap scaleBitmap(Bitmap bitmap, int wantedWidth, int wantedHeight) {
+//        Bitmap output = Bitmap.createBitmap(wantedWidth, wantedHeight, Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(output);
+//        Matrix m = new Matrix();
+//        m.setScale((float) wantedWidth / bitmap.getWidth(), (float) wantedHeight / bitmap.getHeight());
+//        canvas.drawBitmap(bitmap, m, new Paint());
+//
+//        return output;
+//    }
 
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-          if(requestCode== 101 &&resultCode == RESULT_OK){
-              memo=(data.getStringExtra("memo"));
-              setMarker(Principal.locality, Principal.lat, Principal.lng, memo);
+//            if (requestCode== 102 &&resultCode==RESULT_OK)
+//
+//            if (requestCode== 103 &&resultCode==RESULT_OK)
+//            if (requestCode== 104 &&resultCode==RESULT_OK)
+//            if (requestCode== 105 &&resultCode==RESULT_OK)
+//            if (requestCode== 106 &&resultCode==RESULT_OK)
 
-          }
+            if(requestCode== 101 &&resultCode == RESULT_OK) {
+                memo = (data.getStringExtra("memo"));
+                model= (data.getIntExtra("model",model));
+                accuracy=(data.getIntExtra("accuracy",accuracy));
+                radius=(data.getIntExtra("radius",radius));
+                pinsize=(data.getIntExtra("pinsize",pinsize));
+              //  updateRadius();
+            }
+
+        setMarker(this.locality, this.lat, this.lng, memo);
+
+
         //super.onActivityResult(requestCode, resultCode, data);
+    }
+    public int ShowPref(String key){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getInt(key,1);
+    }
+
+    private void setImage(int position) {
+
+        switch (position){
+            case 1://red green blue yell
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.circle_red);
+                break;
+            case 2:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.circle_green);
+                break;
+            case 3:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.circle_blue);
+                break;
+            case 4:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.circle_yellow);
+                break;
+            case 5:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.square_red);
+                break;
+            case 6:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.square_green);
+                break;
+            case 7:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.square_blue);
+                break;
+            case 8:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.square_yellow);
+                break;
+            case 9:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.shield_red);
+                break;
+            case 10:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.shield_green);
+                break;
+            case 11:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.shield_blue);
+                break;
+            case 12:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.shield_yellow);
+                break;
+            default:
+                bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.mipmap.shield_blue);
+                break;
+
+        }
+    }
+
+    public void SavePref(String key, int value) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(key, value);
+        editor.commit();
     }
 }

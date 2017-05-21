@@ -1,6 +1,8 @@
 package a_barbu.gps_agenda;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -12,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RadioButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,23 +26,40 @@ public class PopMarker extends AppCompatActivity
     EditText memo;
     ListView pinlist;
     ImageView pinView ;
-    static String list[] = new String[20];
-    static boolean batt;
+    SeekBar radius;
+    SeekBar accuracy;
+    SeekBar pinsize;
+    int radius_val;
+    int accuracy_val;
+    int model;
+    int pinsize_val;
+
     @Override
     protected void onCreate (Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.popinfo);
 
+        accuracy = (SeekBar) findViewById(R.id.pop_accu);
+        radius = (SeekBar) findViewById(R.id.pop_radius);
+        pinsize = (SeekBar) findViewById(R.id.pop_pinsize);
+        model=ShowPref("model");
+        radius_val=ShowPref("default_radius");
+        accuracy_val=ShowPref("default_accuracy");
+        pinsize_val=ShowPref("default_pinsize");
+
         memo = (EditText) findViewById(R.id.frag_memo);
         String markers[]= getResources().getStringArray(R.array.markers);
         pinView =(ImageView)findViewById(R.id.new_marker);
+        setImage(model-1);
         pinlist= (ListView) findViewById(R.id.list_markerop1);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,markers);
         pinlist.setAdapter(adapter);
         pinlist.setOnItemClickListener( this);
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
+
+
 
         int w = dm.widthPixels;
         int h = dm.heightPixels;
@@ -51,20 +71,20 @@ public class PopMarker extends AppCompatActivity
             public void onClick(View v) {
                 Intent i = new Intent();
                 i.putExtra("memo",memo.getText().toString());
+                i.putExtra("model",model);
+                i.putExtra("radius",radius_val);
+                i.putExtra("accuracy",accuracy_val);
+                i.putExtra("pinsize",pinsize_val);
                 setResult(RESULT_OK,i);
                 finish();
             }
         });
 
-
+        seekbar("accuracy");
+        seekbar("default_radius");
+        seekbar("default_pinsize");
 
     }
-
-//    public void combine(String[] shapes, String[] colors) {
-//        for (int i=1;i<=3;i++)
-//            for (int j=1;j<=4;j++)
-//                PopMarker.list[i*j]=shapes[i-1] +" "+ colors[j-1];
-//    }
 
 
     @Override
@@ -79,7 +99,135 @@ public class PopMarker extends AppCompatActivity
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             TextView temp = (TextView) view;
             int p = position +1;
-
-            Toast.makeText(this,temp.getText(),Toast.LENGTH_SHORT).show();
+            model = p;
+       //     Toast.makeText(this,temp.getText() +" " +position,Toast.LENGTH_SHORT).show();
+            setImage(position);
     }
+
+    private void setImage(int position) {
+        switch (position){
+            case 0://red green blue yell
+                pinView.setImageResource(R.mipmap.circle_red);
+                break;
+            case 1:
+                pinView.setImageResource(R.mipmap.circle_green);
+                break;
+            case 2:
+                pinView.setImageResource(R.mipmap.circle_blue);
+                break;
+            case 3:
+                pinView.setImageResource(R.mipmap.circle_yellow);
+                break;
+            case 4:
+                pinView.setImageResource(R.mipmap.square_red);
+                break;
+            case 5:
+                pinView.setImageResource(R.mipmap.square_green);
+                break;
+            case 6:
+                pinView.setImageResource(R.mipmap.square_blue);
+                break;
+            case 7:
+                pinView.setImageResource(R.mipmap.square_yellow);
+                break;
+            case 8:
+                pinView.setImageResource(R.mipmap.shield_red);
+                break;
+            case 9:
+                pinView.setImageResource(R.mipmap.shield_green);
+                break;
+            case 10:
+                pinView.setImageResource(R.mipmap.shield_blue);
+                break;
+            case 11:
+                pinView.setImageResource(R.mipmap.shield_yellow);
+                break;
+
+        }
+    }
+
+
+    public void seekbar(final String that) {
+        switch (that) {
+            case "accuracy": {
+                accuracy.setProgress(accuracy_val);
+                accuracy.setOnSeekBarChangeListener(
+                        new SeekBar.OnSeekBarChangeListener() {
+                            int progress_value;
+
+                            @Override
+                            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                progress_value = progress;
+                            }
+
+                            @Override
+                            public void onStartTrackingTouch(SeekBar seekBar) {
+
+                            }
+
+                            @Override
+                            public void onStopTrackingTouch(SeekBar seekBar) {
+//
+                                Toast.makeText(PopMarker.this, "Accuracy updated", Toast.LENGTH_LONG).show();
+                               accuracy_val= progress_value;
+                            }
+                        }
+                );
+            }
+            case "radius": {
+             //   radius.setProgress(radius_val);
+                radius.setOnSeekBarChangeListener(
+                        new SeekBar.OnSeekBarChangeListener() {
+                            int progress_value;
+
+                            @Override
+                            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                progress_value = progress;
+                            }
+
+                            @Override
+                            public void onStartTrackingTouch(SeekBar seekBar) {
+
+                            }
+
+                            @Override
+                            public void onStopTrackingTouch(SeekBar seekBar) {
+//                        text_view.setText("Covered : " + progress_value + " / " +seek_bar.getMax());
+                                Toast.makeText(PopMarker.this, "Radius updated", Toast.LENGTH_LONG).show();
+                             radius_val= progress_value;
+                            }
+                        }
+                );
+            }
+            case "pinsize": {
+             //   pinsize.setProgress(pinsize_val);
+                pinsize.setOnSeekBarChangeListener(
+                        new SeekBar.OnSeekBarChangeListener() {
+                            int progress_value;
+
+                            @Override
+                            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                progress_value = progress;
+                            }
+
+                            @Override
+                            public void onStartTrackingTouch(SeekBar seekBar) {
+
+                            }
+
+                            @Override
+                            public void onStopTrackingTouch(SeekBar seekBar) {
+//                        text_view.setText("Covered : " + progress_value + " / " +seek_bar.getMax());
+                                Toast.makeText(PopMarker.this, "Size updated", Toast.LENGTH_LONG).show();
+                             pinsize_val= progress_value;
+                            }
+                        }
+                );
+            }
+        }}
+
+    public int ShowPref(String key){
+                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+                return sp.getInt(key,1);
+            }
 }

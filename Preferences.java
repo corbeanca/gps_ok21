@@ -89,25 +89,26 @@ public class Preferences extends AppCompatActivity
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         TextView temp = (TextView) view;
         int p = position + 1;
-        int col=4;
+        int col=ShowPref("col");
+        if (col==1) col = 4;
         Toast.makeText(this, temp.getText(), Toast.LENGTH_SHORT).show();
 
         if (parent == list_shape) {
             switch (p) {
                 case 1:
                     pinView.setImageResource(R.drawable.circle);
-                    //SavePref("model", 1);
-                    col=4;
+                    SavePref("col", 4);
+
                     break;
                 case 2:
                     pinView.setImageResource(R.drawable.square);
-                    //SavePref("model", 2);
-                    col=8;
+                    SavePref("col", 8);
+
                     break;
                 case 3:
                     pinView.setImageResource(R.drawable.shield);
-                    //SavePref("model", 3);
-                    col=12;
+                    SavePref("col", 12);
+
                     break;
             }
         } else switch (p) {
