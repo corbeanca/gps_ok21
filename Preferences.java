@@ -31,7 +31,6 @@ public class Preferences extends AppCompatActivity
     SeekBar seek_radius;
     SeekBar seek_pinsize;
     ImageView pinView;
-//    final boolean batt = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

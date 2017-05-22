@@ -1,10 +1,12 @@
 package a_barbu.gps_agenda;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -14,7 +16,9 @@ import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,6 +27,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AlertDialog;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -33,10 +38,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -54,8 +61,14 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 
 public class Principal extends AppCompatActivity
@@ -75,11 +88,16 @@ public class Principal extends AppCompatActivity
     int model;
     int pinsize;
     BitmapDrawable bitmapdraw;
+    TextView email;
+    TextView name;
+    ImageView photo;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
+        StrictMode.ThreadPolicy policy = new
+                StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
     //testare conexiune google play services
     if (googleServicesAvailable()) {
@@ -112,11 +130,40 @@ public class Principal extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        View header=navigationView.getHeaderView(0);
+        name = (TextView) header.findViewById(R.id.U_name);
+        email = (TextView) header.findViewById(R.id.U_email);
+        photo = (ImageView) header.findViewById(R.id.U_photo);
+        setHeader();
+
         radius=ShowPref("default_radius");
         accuracy=ShowPref("default_accuracy");
         pinsize=ShowPref("default_pinsize");
 
            }
+
+    private void setHeader() {
+        String x=ShowPref("Photo",0);
+        email.setText(ShowPref("Email",0));
+        name.setText(ShowPref("Name",0));
+        URL myUrl = null;
+        try {
+            myUrl = new URL(x);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        InputStream inputStream = null;
+        try {
+            inputStream = (InputStream)myUrl.getContent();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Drawable drawable = Drawable.createFromStream(inputStream, null);
+        photo.setImageDrawable(drawable);
+
+
+    }
 
     private void initMap() {
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.mapFragment);
@@ -183,7 +230,18 @@ public class Principal extends AppCompatActivity
         } else if (id == R.id.nav_pin) {
 
         }
+        else if (id== R.id.nav_signout){
+            FirebaseAuth.getInstance().signOut();
+            SignIn.mAuth=null;
 
+            SharedPreferences sp= PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor ed = sp.edit();
+
+            ed.clear();
+            ed.commit();
+
+            startActivity(new Intent(Principal.this, SignIn.class));
+        }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -470,6 +528,10 @@ LocationRequest mLocationRequest;
     public int ShowPref(String key){
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getInt(key,1);
+    }
+    public String ShowPref(String key,int a){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getString(key,"var");
     }
 
     private void setImage(int position) {

@@ -13,7 +13,12 @@ import android.app.AlarmManager;
         import android.widget.RadioButton;
         import android.widget.RadioGroup;
         import android.widget.Toast;
-        import java.text.ParseException;
+
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.text.ParseException;
         import java.text.SimpleDateFormat;
         import java.util.Calendar;
 
@@ -29,22 +34,21 @@ public class Config extends AppCompatActivity {
     SimpleDateFormat set2 = new SimpleDateFormat("HH:mm");
     ImageView default_move;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.config);
-
+    //    checkNewUser();
         rg = (RadioGroup) findViewById(R.id.rgroup);
         default_move = (ImageView) findViewById(R.id.default_photo);
         showMove();
 
         setupSaveButton();
-        checkNewUser();
-    }
-
-    private void checkNewUser() {
 
     }
+
+///
 
     private void setupSaveButton() {
         Button save = (Button) findViewById(R.id.button2);
@@ -67,7 +71,8 @@ public class Config extends AppCompatActivity {
                 try {if (hour_s1  != null && hour_s2 != null){
                     set1.parse(hour_s1);
                     set2.parse(hour_s2);
-                    Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();}
+                   // Toast.makeText(Config.this, "Parsare timp OK", Toast.LENGTH_LONG).show();
+                    }
                 } catch (ParseException e) {
                     Toast.makeText(Config.this, "Nu a mers parsarea timpului, introduceti din nou respectand formatul " , Toast.LENGTH_LONG).show();
                 }
