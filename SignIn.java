@@ -25,8 +25,11 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class SignIn extends AppCompatActivity {
 
@@ -35,36 +38,57 @@ public class SignIn extends AppCompatActivity {
     static GoogleApiClient mGoogleApiClient;
     static FirebaseAuth mAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
-    static FirebaseDatabase database;
+    static FirebaseDatabase database= FirebaseDatabase.getInstance();
     static FirebaseUser user;
+    DatabaseReference Ref = database.getInstance().getReference();
     private static final String TAG = "MAIN_ACTIVITY";
-    static String Name = null;
-    static String Email = null;
-    static Uri Photo=null;
+    static String Name ;
+    static String Email ;
+    static Uri Photo;
+    static boolean first;
+    static boolean out = false;
+//    String em = "alexandrubarbu93@gmail,com";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
+
+        if( getIntent().getBooleanExtra("Exit me", false)){
+            android.os.Process.killProcess(android.os.Process.myPid());
+            super.onDestroy();
+           // finish();
+            return; // add this to prevent from doing unnecessary stuffs
+        }
+
         mAuth = FirebaseAuth.getInstance();
         mGoogleBtn = (SignInButton) findViewById( R.id.googleBtn);
+        first = ShowPrefB("first_use");
+
         mAuthListener = new FirebaseAuth.AuthStateListener()
         {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                boolean first_signIn = isFirst_signIn();
+
+                if( firebaseAuth.getCurrentUser() != null ) {
+                    if (first) {
+                      //nu e pentru aici. ar trebui pus unde face scrierea de 'first_use'  \/
+                        //  Toast.makeText(SignIn.this, "config, user nou", Toast.LENGTH_SHORT).show();
+
+                        if(!out)
+                            signOut();
+                        startActivity(new Intent(SignIn.this, Config.class));
 
 
-                if( firebaseAuth.getCurrentUser() != null )
-                 if (first_signIn)
-                {
-                      Toast.makeText(SignIn.this,"first sign in, import settings", Toast.LENGTH_LONG).show();
-                    change_use();
-                    signOut();
-                    startActivity(new Intent(SignIn.this,Config.class));
+                    } else {
+
+
+
+
+                        Toast.makeText(SignIn.this, "welcome back", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(SignIn.this, Principal.class));
+
+                    }
                 }
-                else{
-             //       Toast.makeText(SignIn.this, "Welcome back " + Name +"! Settings have been imported", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(SignIn.this,Principal.class));}
             }
         };
         // Configure Google Sign In
@@ -88,13 +112,12 @@ public class SignIn extends AppCompatActivity {
             }
         });
     }
-    private boolean isFirst_signIn (){
-        SharedPreferences sp= PreferenceManager.getDefaultSharedPreferences(this);
-        boolean first = sp.getBoolean("first_use", true);
-        if (first)
-            return true;
-                else return false;
+
+    private boolean ShowPrefB(String key) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(key,true);
     }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -124,22 +147,8 @@ public class SignIn extends AppCompatActivity {
 
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = result.getSignInAccount();
+
                 firebaseAuthWithGoogle(account);
-
-
-                Toast.makeText(SignIn.this, "acum trebuie introdus un nou user in baza ", Toast.LENGTH_SHORT).show();
-//                database = FirebaseDatabase.getInstance();
-//                user=mAuth.getCurrentUser();
-//                String userID = user.getUid();
-//
-//
-//                User userLoc = new User(Name, Email);
-//                DatabaseReference Ref = database.getReference().child("Users").child(userID);
-//                Ref.setValue(userLoc);
-//
-//                startActivity(new Intent(SignIn.this, Config.class));
-//                Toast.makeText(SignIn.this, "Welcome " + Name +"! First time set up ", Toast.LENGTH_SHORT).show();
-
 
             } else {
                 // Google Sign In failed, update UI appropriately
@@ -155,30 +164,19 @@ public class SignIn extends AppCompatActivity {
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-                        Log.d(TAG, "signInWithCredential:onComplete:" + task.isSuccessful());
+                   //     Log.d(TAG, "signInWithCredential:onComplete:" + task.isSuccessful());
                         user =  mAuth.getCurrentUser();
-
-
 
                         Name = account.getDisplayName();
                         Email = account.getEmail();
                         Photo = account.getPhotoUrl();
-
+                        String em = Email.replace(".", ",");
+                        Email = em;
                         SavePref("Name",Name);
                         SavePref("Email",Email);
                         SavePref("Photo",Photo.toString());
 
-                        // check if user present
-
-                        //DatabaseReference ref2=Ref.child("userName");
-                      //  Toast.makeText(SignIn.this, "user test  " + ref2, Toast.LENGTH_LONG).show();
-
-
-                            //Ref = Ref.child(Email);
-                           // Toast.makeText(SignIn.this, "Welcome back " + Name +"! Settings have been imported", Toast.LENGTH_SHORT).show();
-                          //  isFirst_signIn();
-                        //    startActivity(new Intent(SignIn.this,Principal.class));
-
+                        first = CheckPresent();
 
                         if (!task.isSuccessful()) {
                             Log.w(TAG, "signInWithCredential", task.getException());
@@ -189,20 +187,31 @@ public class SignIn extends AppCompatActivity {
                 });
     }
 
-    private void change_use(){
-        SharedPreferences sp= PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor ed = sp.edit();
-        ed.putBoolean("first_use", false);
-        ed.commit();
-    }
-
     public void SavePref(String key, String value) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(key, value);
         editor.commit();
     }
+    public void SavePref(String key) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(key,true);
+        editor.commit();
+    }
 
+    public boolean CheckPresent (){
+        DatabaseReference ref_First = Ref.child(Email).child("present");
+
+        if (ref_First.equals("true")){
+                return false;
+                }
+            else
+                {ref_First.setValue("true");
+                    SavePref("first_use");
+                return true;
+        }
+    }
 }
 
 

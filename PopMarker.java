@@ -43,28 +43,28 @@ public class PopMarker extends AppCompatActivity
         accuracy = (SeekBar) findViewById(R.id.pop_accu);
         radius = (SeekBar) findViewById(R.id.pop_radius);
         pinsize = (SeekBar) findViewById(R.id.pop_pinsize);
-        model=ShowPref("model");
-        radius_val=ShowPref("default_radius");
-        accuracy_val=ShowPref("default_accuracy");
-        pinsize_val=ShowPref("default_pinsize");
+        model=Principal.model;
+        radius_val=Principal.radius;
+        accuracy_val=Principal.accuracy;
+        pinsize_val=Principal.pinsize;
 
         memo = (EditText) findViewById(R.id.frag_memo);
         String markers[]= getResources().getStringArray(R.array.markers);
         pinView =(ImageView)findViewById(R.id.new_marker);
         setImage(model-1);
         pinlist= (ListView) findViewById(R.id.list_markerop1);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,markers);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,R.layout.custom_item,markers);
         pinlist.setAdapter(adapter);
         pinlist.setOnItemClickListener( this);
+
+
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
-
-
         int w = dm.widthPixels;
         int h = dm.heightPixels;
-        getWindow().setLayout((int) (w*.8),(int) (h *.6));
-       // getWindow().setLayout(w,h);
+        getWindow().setLayout((int) (w*.7),(int) (h *.5));
+
         Button save = (Button) findViewById(R.id.save_pin);
         save.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,11 +79,9 @@ public class PopMarker extends AppCompatActivity
                 finish();
             }
         });
-
         seekbar("accuracy");
         seekbar("default_radius");
         seekbar("default_pinsize");
-
     }
 
 
@@ -175,7 +173,7 @@ public class PopMarker extends AppCompatActivity
                 );
             }
             case "radius": {
-             //   radius.setProgress(radius_val);
+                radius.setProgress(radius_val);
                 radius.setOnSeekBarChangeListener(
                         new SeekBar.OnSeekBarChangeListener() {
                             int progress_value;
@@ -200,7 +198,7 @@ public class PopMarker extends AppCompatActivity
                 );
             }
             case "pinsize": {
-             //   pinsize.setProgress(pinsize_val);
+                pinsize.setProgress(pinsize_val);
                 pinsize.setOnSeekBarChangeListener(
                         new SeekBar.OnSeekBarChangeListener() {
                             int progress_value;
@@ -225,9 +223,4 @@ public class PopMarker extends AppCompatActivity
                 );
             }
         }}
-
-    public int ShowPref(String key){
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-                return sp.getInt(key,1);
-            }
 }

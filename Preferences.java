@@ -21,7 +21,6 @@ import android.widget.Toast;
 
 public class Preferences extends AppCompatActivity
        implements AdapterView.OnItemClickListener
-
 {
     RadioGroup rg_batt;
     RadioButton rb;
@@ -43,11 +42,7 @@ public class Preferences extends AppCompatActivity
 
         pinView = (ImageView) findViewById(R.id.pin_view);
         //vvv    pin-ul setat deja    vvv
-      //  checkPin();
-        // pinView.setImageResource();
         checkBatt();
-
-
         list_shape = (ListView) findViewById(R.id.list_shapes);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, shapes);
         list_shape.setAdapter(adapter);
@@ -77,17 +72,14 @@ public class Preferences extends AppCompatActivity
         int opt = ShowPref("Battery");
         if (opt ==1)
             rb = (RadioButton) findViewById(R.id.but_eco) ;
-
         else rb = (RadioButton) findViewById(R.id.but_off) ;
-
             rb.setChecked(true);
-
     }
-
+    //select forma + culoare
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         TextView temp = (TextView) view;
-        int p = position + 1;
+        int p = position +1;
         int col=ShowPref("col");
         if (col==1) col = 4;
         Toast.makeText(this, temp.getText(), Toast.LENGTH_SHORT).show();
@@ -97,38 +89,34 @@ public class Preferences extends AppCompatActivity
                 case 1:
                     pinView.setImageResource(R.drawable.circle);
                     SavePref("col", 4);
-
                     break;
                 case 2:
                     pinView.setImageResource(R.drawable.square);
                     SavePref("col", 8);
-
                     break;
                 case 3:
                     pinView.setImageResource(R.drawable.shield);
                     SavePref("col", 12);
-
                     break;
             }
         } else switch (p) {
             case 1:
                 pinView.setBackgroundColor(Color.RED);
-                SavePref("model", col-4);
+                SavePref("model", col-3);
                 break;
             case 2:
                 pinView.setBackgroundColor(Color.GREEN);
-                SavePref("model", col-3);
+                SavePref("model", col-2);
                 break;
             case 3:
                 pinView.setBackgroundColor(Color.BLUE);
-                SavePref("model", col-2);
+                SavePref("model", col-1);
                 break;
             case 4:
                 pinView.setBackgroundColor(Color.YELLOW);
-                SavePref("model", col-1);
+                SavePref("model", col);
                 break;
         }
-
     }
 
     public void select_batt(View v) {
@@ -228,5 +216,7 @@ public class Preferences extends AppCompatActivity
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getInt(key,1);
     }
+
+
 
 }
