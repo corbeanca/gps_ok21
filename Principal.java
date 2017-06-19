@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -77,10 +78,7 @@ import java.io.StreamCorruptedException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 
 public class Principal extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -89,7 +87,8 @@ public class Principal extends AppCompatActivity
         LocationListener, AdapterView.OnItemClickListener {
 
     static List<MarkerObj> listaMarkere;
-    static List<Itinerary> listaItinener;
+    static List<Itinerary> listaItinerarii;
+    static String title;
     static String memo;
     GoogleMap mGoogleMap;
     static GoogleApiClient mGoogleApi;
@@ -104,8 +103,7 @@ public class Principal extends AppCompatActivity
     TextView email;
     TextView name;
     ImageView photo;
-    Button side;
-    boolean plusminus;
+    ImageView side;
     static boolean lista_display_dreapta = false;
     static FirebaseDatabase database = FirebaseDatabase.getInstance();
     static DatabaseReference Ref = database.getReference();
@@ -116,15 +114,19 @@ public class Principal extends AppCompatActivity
     ListView lista_color;
     boolean[] itiswithMk;
     static boolean[] displayModel;
-    int posIti;
     static boolean showRadiusOnMarkers = false;
     static boolean lista_display_stanga=false;
     static int posI;
     static ArrayList<String> Markers;
     AdapterListaMark adapter;
+    ImageView top_gif;
+    static boolean service = false;
+    static int temp_position;
+    static int newID;
 
-    List<MarkerObj> displayOnMapList ;
-    List<CircleOptions> displayOnMapRadius;
+
+    static ArrayList<MarkerObj> displayOnMapList ;
+    static ArrayList<CircleOptions> displayOnMapRadius;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,12 +140,17 @@ public class Principal extends AppCompatActivity
         if (googleServicesAvailable()) {
             //      Toast.makeText(this, "Exista Google Play Services", Toast.LENGTH_SHORT).show();
             setContentView(R.layout.activity_principal);
-            side = (Button) findViewById(R.id.sideLayout);
+            side = (ImageView) findViewById(R.id.sideLayout);
             side.setVisibility(View.INVISIBLE);
             l_sec = (ViewGroup) findViewById(R.id.l_secundar);
             l_col = (ViewGroup) findViewById(R.id.l_color);
             l_col.removeAllViews();
             l_sec.removeAllViews();
+
+            top_gif =  ( pl.droidsonroids.gif.GifImageView) findViewById(R.id.toolbar_working);
+
+
+
 
             displayModel = new boolean[12];
 
@@ -167,13 +174,13 @@ public class Principal extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                Snackbar.make(view, "PIN Saved", Snackbar.LENGTH_SHORT)
-//                        .setAction("Action", null).show();
+
 
                 writetoFile();
                 //      addMarkerOnline(newMark);
                 Intent intent = new Intent(Principal.this, GpsService.class);
                 startService(intent);
+                top_gif();
             }
         });
         importItinerary();
@@ -185,7 +192,6 @@ public class Principal extends AppCompatActivity
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-        listamarkerside = (ListView) findViewById(R.id.side_ITIlist);
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -198,6 +204,7 @@ public class Principal extends AppCompatActivity
         radius = ShowPref("default_radius");
         accuracy = ShowPref("default_accuracy");
         pinsize = ShowPref("default_pinsize");
+
 
 
     }
@@ -235,8 +242,10 @@ public class Principal extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
+            if (marker !=null)
             remove();
         }
+
     }
 
     @Override
@@ -294,8 +303,8 @@ public class Principal extends AppCompatActivity
 
         } else if (id == R.id.nav_signout) {
             FirebaseAuth.getInstance().signOut();
-            SignIn.mAuth = null;
-            SignIn.out = true;
+            SignIn.mAuth.signOut();
+      //      SignIn.mAuth = null;
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor ed = sp.edit();
 
@@ -366,11 +375,19 @@ public class Principal extends AppCompatActivity
                 public View getInfoContents(Marker marker) {
                     View v = getLayoutInflater().inflate(R.layout.pin_window, null);
                     TextView tvLocality = (TextView) v.findViewById(R.id.pin_w_locality);
-                    EditText tvSnippet = (EditText) v.findViewById(R.id.pin_w_memo);
-                    // if(memo !=null)
+                    TextView tvMemo = (TextView) v.findViewById(R.id.pin_w_memo);
+                    if(memo !=null)
+                        tvMemo.setText(memo);
+                    tvMemo.setMaxWidth(500);
+
+                    TextView tvTitle = (TextView) v.findViewById(R.id.pin_w_title);
+                    if(title!=null)
+                    tvTitle.setText(title);
+                  //  tvTitle.setText("un titlu");
 
                     tvLocality.setText(marker.getTitle());
-                    tvSnippet.setText(marker.getSnippet());
+                    memo = marker.getSnippet();
+                    tvMemo.setText(marker.getSnippet());
 
                     return v;
                 }
@@ -388,16 +405,31 @@ public class Principal extends AppCompatActivity
             mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
                 @Override
                 public void onMapLongClick(LatLng latLng) {
-                    int id = ShowPref("ID");
-                    MarkerObj newMarkerObj = new MarkerObj(lat, lng, locality, radius, accuracy, null, memo, model, id);
+                    if ( lat !=0 && lng !=0){
+                    newID = generateID();
+                    MarkerObj newMarkerObj = new MarkerObj(lat, lng, locality, radius, accuracy, null, memo, model, newID);
                     newMarkerObj.setSize(pinsize);
-                    id = id + 1;
-                    SavePref("ID", id);
+                    addMarkerToItis();
+                    Time today = new Time(Time.getCurrentTimezone());
+                    today.setToNow();
+                    String date= today.format("%H:%M:%S")+" on " +(today.monthDay + "/")+(Integer.toString(today.month+1)+"/")+(today.year);
+
+                    newMarkerObj.setAdded(date);
                     Toast.makeText(Principal.this, "Marker added", Toast.LENGTH_LONG).show();
                     addMarkerOnline(newMarkerObj);
                     newMark = newMarkerObj;
                     itiswithMk = null;
-                    itiswithMk = new boolean[listaItinener.size()];
+                    itiswithMk = new boolean[listaItinerarii.size()];}
+                 //   else {
+//                        myMap.addMarker(new MarkerOptions()
+//                                .position(point)
+//                                .title(point.toString())
+//                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+//
+//                        Toast.makeText(getApplicationContext(),
+//                                "New marker added@" + point.toString(), Toast.LENGTH_LONG)
+//                                .show();
+//                    }
 
                 }
             });
@@ -454,19 +486,18 @@ public class Principal extends AppCompatActivity
         EditText et = (EditText) findViewById(R.id.search_field);
         String location = et.getText().toString();
 
-        side.setVisibility(View.VISIBLE);
+
         Geocoder gc = new Geocoder(this);
         List<Address> list = gc.getFromLocationName(location, 1);
         if (list.isEmpty()) {
             Toast.makeText(this, "Invalid Name! Try again", Toast.LENGTH_SHORT).show();
 
         } else {
+            side.setVisibility(View.VISIBLE);
+            side.bringToFront();
             Address adress = list.get(0);
 
-
             String locality = adress.getLocality();
-            //  adress.get
-
             double lat = adress.getLatitude();
             double lng = adress.getLongitude();
             zoomLocation(lat, lng, 15);
@@ -585,7 +616,7 @@ public class Principal extends AppCompatActivity
 
     public int ShowPref(String key) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getInt(key, 1);
+        return sp.getInt(key, 0);
     }
 
     public String ShowPref(String key, int a) {
@@ -649,6 +680,8 @@ public class Principal extends AppCompatActivity
     public void ClickOverlay(){
         if (!lista_display_stanga) {
             lista_display_stanga = true;
+            displayOnMapList = new ArrayList<>();
+            displayOnMapRadius = new ArrayList<>();
             final View lay = getLayoutInflater().inflate(R.layout.side_marker_color, l_col);
             lista_color = (ListView) lay.findViewById(R.id.side_colorlist);
             Button close = (Button) findViewById(R.id.side_colorhide);
@@ -666,13 +699,13 @@ public class Principal extends AppCompatActivity
             lista_color.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Toast.makeText(Principal.this, "Shape changed for  " + position, Toast.LENGTH_SHORT).show();
+ //                   Toast.makeText(Principal.this, "Shape changed for  " + position, Toast.LENGTH_SHORT).show();
 
                     if (displayModel[position])
                         displayModel[position] = false;
                     else displayModel[position] = true;
+                    changeDisplayMarker(position);
 
-               //     DisplayMarkersonMap();
                     adapter.notifyDataSetChanged();
                     updateView(position);
 
@@ -690,264 +723,27 @@ public class Principal extends AppCompatActivity
         }
     }
 
-    private void DisplayMarkersonMap() {
-        if (displayOnMapList.size()!=0) {
-            //clear harta +++++
+    public void DisplayMarkersonMap() {
+       if (displayOnMapList.size()!=0) {
+            clearMarkersfromMap();
 
-            displayOnMapList = new List<MarkerObj>() {
-                @Override
-                public int size() {
-                    return 0;
-                }
 
-                @Override
-                public boolean isEmpty() {
-                    return false;
-                }
+       }
+        displayOnMapList = new ArrayList<>();
+        displayOnMapRadius = new ArrayList<>();
+        MarkerObj tempMk ;
 
-                @Override
-                public boolean contains(Object o) {
-                    return false;
-                }
-
-                @NonNull
-                @Override
-                public Iterator<MarkerObj> iterator() {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public Object[] toArray() {
-                    return new Object[0];
-                }
-
-                @NonNull
-                @Override
-                public <T> T[] toArray(@NonNull T[] a) {
-                    return null;
-                }
-
-                @Override
-                public boolean add(MarkerObj markerObj) {
-                    return false;
-                }
-
-                @Override
-                public boolean remove(Object o) {
-                    return false;
-                }
-
-                @Override
-                public boolean containsAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean addAll(@NonNull Collection<? extends MarkerObj> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean addAll(int index, @NonNull Collection<? extends MarkerObj> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean removeAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean retainAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public void clear() {
-
-                }
-
-                @Override
-                public MarkerObj get(int index) {
-                    return null;
-                }
-
-                @Override
-                public MarkerObj set(int index, MarkerObj element) {
-                    return null;
-                }
-
-                @Override
-                public void add(int index, MarkerObj element) {
-
-                }
-
-                @Override
-                public MarkerObj remove(int index) {
-                    return null;
-                }
-
-                @Override
-                public int indexOf(Object o) {
-                    return 0;
-                }
-
-                @Override
-                public int lastIndexOf(Object o) {
-                    return 0;
-                }
-
-                @Override
-                public ListIterator<MarkerObj> listIterator() {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public ListIterator<MarkerObj> listIterator(int index) {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public List<MarkerObj> subList(int fromIndex, int toIndex) {
-                    return null;
-                }
-            };
-            displayOnMapRadius = new List<CircleOptions>() {
-                @Override
-                public int size() {
-                    return 0;
-                }
-
-                @Override
-                public boolean isEmpty() {
-                    return false;
-                }
-
-                @Override
-                public boolean contains(Object o) {
-                    return false;
-                }
-
-                @NonNull
-                @Override
-                public Iterator<CircleOptions> iterator() {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public Object[] toArray() {
-                    return new Object[0];
-                }
-
-                @NonNull
-                @Override
-                public <T> T[] toArray(@NonNull T[] a) {
-                    return null;
-                }
-
-                @Override
-                public boolean add(CircleOptions circleOptions) {
-                    return false;
-                }
-
-                @Override
-                public boolean remove(Object o) {
-                    return false;
-                }
-
-                @Override
-                public boolean containsAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean addAll(@NonNull Collection<? extends CircleOptions> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean addAll(int index, @NonNull Collection<? extends CircleOptions> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean removeAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public boolean retainAll(@NonNull Collection<?> c) {
-                    return false;
-                }
-
-                @Override
-                public void clear() {
-
-                }
-
-                @Override
-                public CircleOptions get(int index) {
-                    return null;
-                }
-
-                @Override
-                public CircleOptions set(int index, CircleOptions element) {
-                    return null;
-                }
-
-                @Override
-                public void add(int index, CircleOptions element) {
-
-                }
-
-                @Override
-                public CircleOptions remove(int index) {
-                    return null;
-                }
-
-                @Override
-                public int indexOf(Object o) {
-                    return 0;
-                }
-
-                @Override
-                public int lastIndexOf(Object o) {
-                    return 0;
-                }
-
-                @Override
-                public ListIterator<CircleOptions> listIterator() {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public ListIterator<CircleOptions> listIterator(int index) {
-                    return null;
-                }
-
-                @NonNull
-                @Override
-                public List<CircleOptions> subList(int fromIndex, int toIndex) {
-                    return null;
-                }
-            };
-        }
         for (int index=0;index< listaMarkere.size();index++){
-            MarkerObj tempMk= listaMarkere.get(index);
+            tempMk= listaMarkere.get(index);
             LatLng tempLL = new LatLng(tempMk.lat,tempMk.lng);
-            CircleOptions tempC = new CircleOptions()
+
+            if (displayModel[tempMk.model])
+            {CircleOptions tempC = new CircleOptions()
                     .center(tempLL)
-                    .radius(radius * 200)
+                    .radius(200 * tempMk.radius)
                     .fillColor(0x33BCCBD8)
                     .strokeColor(Color.BLUE)
                     .strokeWidth(4);
-            if (displayModel[tempMk.model])
-            {
                 displayOnMapList.add(tempMk);
                 displayOnMapRadius.add(tempC);
             }
@@ -955,10 +751,10 @@ public class Principal extends AppCompatActivity
         }
         if (displayOnMapList.size()!=0)
         for (int index=0;index<displayOnMapList.size();index++){
-            MarkerObj tempMk = displayOnMapList.get(index);
+            tempMk = displayOnMapList.get(index);
             setImage(tempMk.model-1);
             Bitmap b = bitmapdraw.getBitmap();
-            Bitmap smallMarker = Bitmap.createScaledBitmap(b, 50 + 50 * tempMk.size, 100 + 50 *tempMk.size , false);
+            Bitmap smallMarker = Bitmap.createScaledBitmap(b, 40 + 20 * tempMk.size, 50 + 20 *tempMk.size , false);
 
             MarkerOptions optionsMark = new MarkerOptions()
                     .title(tempMk.locality)
@@ -975,6 +771,15 @@ public class Principal extends AppCompatActivity
         }
 
     }
+    public void UpdateDisplay(View v){
+        DisplayMarkersonMap();
+    }
+
+    private void clearMarkersfromMap() {
+        displayOnMapList = null;
+        displayOnMapRadius = null;
+        mGoogleMap.clear();
+    }
 
     private void updateView(int index){
         View v = lista_color.getChildAt(index -
@@ -988,40 +793,79 @@ public class Principal extends AppCompatActivity
     public void ClickSide(View v) {
         readfromFile();
 
-        View layout = getLayoutInflater().inflate(R.layout.side_principal, l_sec);
-        ListView lw = (ListView) layout.findViewById(R.id.side_ITIlist);
-
-//        ImageView plus = (ImageView) layout.findViewById(R.id.side_plus_onIti);
-//        ImageView minus = (ImageView) findViewById(R.id.side_minus_onIti);
-
-//        if(itiswithMk[posIti]){
-//            plus.setVisibility(View.VISIBLE);
-//            minus.setVisibility(View.INVISIBLE);
-//        } else{
-//            plus.setVisibility(View.INVISIBLE);
-//            minus.setVisibility(View.VISIBLE);
-//        }
-
         if (!lista_display_dreapta) {
+            itiswithMk = new boolean[listaItinerarii.size()];
+
+            temp_position=0;
             lista_display_dreapta = true;
-            layout.bringToFront();
-            layout.setVisibility(View.VISIBLE);
-//
-//            String listaMstring;
-//            String listaIstring;
-//
-//            listaIstring = listaItinener.toString();
-            ArrayAdapter<Itinerary> adapter = new ArrayAdapter<Itinerary>(this, android.R.layout.simple_list_item_1, listaItinener);
+            final View lay = getLayoutInflater().inflate(R.layout.side_principal, l_sec);
+            listamarkerside = (ListView) lay.findViewById(R.id.side_ITIlist);
+            final ImageView plus = (ImageView) findViewById(R.id.side_plus);
+            final ImageView minus = (ImageView) findViewById(R.id.side_minus);
+            final TextView text_info = (TextView) findViewById(R.id.side_principal_text);
+            Button save = (Button) findViewById(R.id.side_principal_save);
+            plus.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itiswithMk[temp_position]=true;
+                    minus.setClickable(true);
+                    plus.setImageResource(R.mipmap.iti_plus_g);
+                    minus.setImageResource(R.mipmap.iti_minus);
+                    plus.setClickable(false);
+                    Toast.makeText(Principal.this, "Plus a mers ", Toast.LENGTH_SHORT).show();
+                }
+            });
+            minus.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itiswithMk[temp_position]=false;
+                    minus.setClickable(false);
+                    plus.setClickable(true);
+                    plus.setImageResource(R.mipmap.iti_plus);
+                    minus.setImageResource(R.mipmap.iti_minus_g);
+                    Toast.makeText(Principal.this, "Minus a mers ", Toast.LENGTH_SHORT).show();
+                }
+            });
+      //      Switch sw = (Switch) findViewById(R.id.side_color_sw);
+           final ArrayAdapter<Itinerary> adapterSide = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaItinerarii);
 
-            lw.setAdapter(adapter);
-            lw.setOnItemClickListener(Principal.this);
-//
-        } else {
-            lista_display_dreapta = false;
-            layout.setVisibility(View.INVISIBLE);
-            l_sec.removeAllViews();
-
+            lay.bringToFront();
+            lay.setVisibility(View.VISIBLE);
+            listamarkerside.setAdapter(adapterSide);
+            listamarkerside.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    String temp = listaItinerarii.get(position).name;
+                    if (listaItinerarii.get(position).date.equals(""))
+                        temp=temp+"\n(no date yet)";
+                    else temp=temp+"\n on "+listaItinerarii.get(position).date;
+                    text_info.setText(temp);
+                    temp_position=position;
+                    if (itiswithMk[position]){
+                        minus.setClickable(true);
+                        plus.setImageResource(R.mipmap.iti_plus_g);
+                        minus.setImageResource(R.mipmap.iti_minus);
+                        plus.setClickable(false);
+                    }
+                    else{minus.setClickable(false);
+                        plus.setClickable(true);
+                        plus.setImageResource(R.mipmap.iti_plus);
+                        minus.setImageResource(R.mipmap.iti_minus_g);
+                    }
+                    adapterSide.notifyDataSetChanged();
+                }
+            });
+            save.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    lista_display_dreapta = false;
+                    lay.setVisibility(View.INVISIBLE);
+                    l_sec.removeAllViews();
+                    side.setVisibility(View.INVISIBLE);
+                }
+            });
         }
+
     }
 
     public void changeDisplayRadius (View v){
@@ -1030,11 +874,7 @@ public class Principal extends AppCompatActivity
         else            showRadiusOnMarkers=true;
 
     }
-
-    public void button_add(View v) {
-        Toast.makeText(this, "Exista Google Play Services", Toast.LENGTH_SHORT).show();
-    }
-
+//de pus email citit
     public void importMarkers() {
         listaMarkere = new ArrayList<>();
         Ref.child("alexandrubarbu93@gmail,com").child("Marker")
@@ -1053,7 +893,6 @@ public class Principal extends AppCompatActivity
                     }
                 });
         Toast.makeText(this, "Markers imported", Toast.LENGTH_SHORT).show();
-
     }
 
     public void DisplayMarkers(List markerlist) {
@@ -1066,36 +905,21 @@ public class Principal extends AppCompatActivity
     // on click pentru lista de (itinerii)
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        posIti = position;
-        boolean is_present = checkifpresent(position, newMark);
-        //daca e prezent, apare minus, dispare plus;
-        if (is_present) {
-            plusminus = false;
-        } else {
-            plusminus = true;
-        }
+
     }
 
     // markerul e adaugat. apare butonul de layout dreapta cu itinerarii existente. in layoutul din dreapta click pe un itinerariu, este marcat
     // apoi click pe plus si-l adauga la iti respectiv. cand dau click pe linia din lista verifica daca e prezent. daca este, apare minusul
     //si dispare plusul.
     private boolean checkifpresent(int pos, MarkerObj mk) {
-        Itinerary it = listaItinener.get(pos);
+        Itinerary it = listaItinerarii.get(pos);
         if (it.HasMk(it, mk))
             return true;
         return false;
     }
 
-    public void clickPlus(View v) {
-        itiswithMk[posIti] = true;
-    }
-
-    public void clickMinus(View v) {
-        itiswithMk[posIti] = false;
-    }
-
     public void importItinerary() {
-        listaItinener = new ArrayList<>();
+        listaItinerarii = new ArrayList<>();
         Ref.child("alexandrubarbu93@gmail,com").child("Itinerary")
                 .addValueEventListener(new ValueEventListener() {
                     @Override
@@ -1103,7 +927,7 @@ public class Principal extends AppCompatActivity
                         Iterable<DataSnapshot> children = dataSnapshot.getChildren();
                         for (DataSnapshot child : children) {
                             Itinerary value = child.getValue(Itinerary.class);
-                            listaItinener.add(value);
+                            listaItinerarii.add(value);
                         }
                     }
 
@@ -1116,7 +940,7 @@ public class Principal extends AppCompatActivity
     }
 
     public static void removeIti(int pos) {
-        listaItinener.remove(pos);
+        listaItinerarii.remove(pos);
         posI = pos;
         //static DatabaseReference Ref = FirebaseDatabase.getInstance();
         Ref.child("alexandurbarbu93@gmail,com").child("Itinerary").child(Integer.toString(pos)).removeValue();
@@ -1137,7 +961,7 @@ public class Principal extends AppCompatActivity
             e.printStackTrace();
         }
         Toast.makeText(this, "Done Writing objects to file", Toast.LENGTH_SHORT).show();
-        Log.v("Mkto_file_from_online", "lista Marker =" + listaMarkere);
+//        Log.v("Mkto_file_from_online", "lista Marker =" + listaMarkere);
     }
 
     public void readfromFile() {
@@ -1149,7 +973,7 @@ public class Principal extends AppCompatActivity
 
 //            MarkerObj mkob = (MarkerObj) input.readObject();
             listaMarkere = (List<MarkerObj>) input.readObject();
-            Log.v("serialization", "lista Marker =" + listaMarkere);
+ //           Log.v("serialization", "lista Marker =" + listaMarkere);
             input.close();
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
@@ -1170,41 +994,47 @@ public class Principal extends AppCompatActivity
         for (int i=0;i<12;i++){
             boolean x = sp.getBoolean("display_by_type"+(Integer.toString(i)), false);
         if (x) {
-           // Toast.makeText(Principal.this, "Markers type display list generated ", Toast.LENGTH_LONG).show();
-
-              editor.putBoolean("display_by_type"+(Integer.toString(i)),true);
-              editor.apply();
+          //    editor.putBoolean("display_by_type"+(Integer.toString(i)),true);
               displayModel[i]=true;
-
         }
-       else {editor.putBoolean("display_by_type"+i,false);
-            editor.apply();
-            displayModel[i]=false;
-            //Toast.makeText(Principal.this, "Markers type display list retrieved", Toast.LENGTH_LONG).show();
+       else {
+            displayModel[i]=false;  }
+ //           Log.v("Marker "+i + " - ", Boolean.toString(x)   );
         }
-            Log.v("Marker "+i + " - ", Boolean.toString(x)   );}
 
 editor.commit();
 
     }
     //se apeleaza la fiecare check in lista marker color
     public void changeDisplayMarker(int i){
+
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sp.edit();
-        if (!sp.getBoolean("display_by_type"+(Integer.toString(i)) , false)) {
+        if ( displayModel[i]) {
             editor.putBoolean("display_by_type" + (Integer.toString(i)), true);
-        displayModel[i]=true;}
-        else{
+        }
+        else if (!displayModel[i]){
         editor.putBoolean("display_by_type"+(Integer.toString(i)),false);
-            displayModel[i]=false;}
-        Log.v("display |||", (Boolean.toString (sp.getBoolean("display_by_type"+(Integer.toString(i)) , false) )      ));
+           }
+        Log.v("display changed >", (Boolean.toString (sp.getBoolean("display_by_type"+(Integer.toString(i)) , false) )      ));
         editor.commit();
     }
-    public boolean checkDisplayMarker(int i){
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (sp.getBoolean("display_by_type"+ (Integer.toString(i)) , false))
-            return true;
-        else return false;
+
+    public void addMarkerToItis(){
+        for(int i=0;i<listaItinerarii.size();i++){
+            if (itiswithMk[i])
+                listaItinerarii.get(i).addID(newID);
+        }
+    }
+//modificat email
+    public int generateID(){
+
+        String ID = Ref.child("alexandrubarbu93@gmail,com").child("Last ID").getKey();
+        int id = Integer.parseInt(ID);
+        Ref.child("alexandrubarbu93@gmail,com").child("Last ID").setValue(id+1);
+        return id;
+
+
     }
 
     public static class AdapterListaMark extends ArrayAdapter<String>{
@@ -1293,55 +1123,18 @@ editor.commit();
 
     }
 
-//    private void setImage(int position) {
-//        switch (position){
-//            case 0://red green blue yell
-//                viewHolder.thumbnail.setImageResource(R.mipmap.circle_red);
-//                break;
-//            case 1:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.circle_green);
-//                break;
-//            case 2:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.circle_blue);
-//                break;
-//            case 3:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.circle_yellow);
-//                break;
-//            case 4:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.square_red);
-//                break;
-//            case 5:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.square_green);
-//                break;
-//            case 6:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.square_blue);
-//                break;
-//            case 7:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.square_yellow);
-//                break;
-//            case 8:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.shield_red);
-//                break;
-//            case 9:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.shield_green);
-//                break;
-//            case 10:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.shield_blue);
-//                break;
-//            case 11:
-//                viewHolder.thumbnail.setImageResource(R.mipmap.shield_yellow);
-//                break;
-//
-//        }
-//    }
-//
     public static class ViewHolder {
         ImageView thumbnail;
         TextView title;
         CheckBox check;
     }
 
-
+    public void top_gif(){
+     //   top_gif=new  pl.droidsonroids.gif.GifImageView (R.id.toolbar_working);
+        if (service)
+            top_gif.setImageResource(R.mipmap.stop);
+        else top_gif.setImageResource(R.mipmap.load4);
+    }
 }
 
 

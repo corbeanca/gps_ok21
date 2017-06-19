@@ -25,6 +25,8 @@ public class GeofenceTransition extends IntentService{
     private static final String TAG = GeofenceTransition.class.getSimpleName();
     public static final int GEOFENCE_NOTIFICATION_ID = 0;
 
+    int model=0;
+
     public GeofenceTransition() {
         super(TAG);
     }
@@ -63,10 +65,19 @@ public class GeofenceTransition extends IntentService{
             }
 
             String status = null;
-            if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER )
-                status = "Entering ";
-            else if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT )
-                status = "Exiting ";
+            if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ) {
+
+                status = getString(R.string.geo_enter);
+
+
+            }
+            else if ( geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT ) {
+
+                status = getString(R.string.geo_exit);
+//aici aduna PASSED + LAST VISIT
+
+
+            }
             return status + TextUtils.join( ", ", triggeringGeofencesList);
         }
 
@@ -87,14 +98,15 @@ public class GeofenceTransition extends IntentService{
         Log.i(TAG, "sendNotification: " + msg );
 
         // Intent to start the main Activity
-    //    Intent notificationIntent = Principal.makeNotificationIntent(
-     //           getApplicationContext(), msg
-      //  );
+        Intent notificationIntent = GpsService.makeNotificationIntent(
+                getApplicationContext(), msg
+        );
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(Principal.class);
-    //    stackBuilder.addNextIntent(notificationIntent);
+        stackBuilder.addNextIntent(notificationIntent);
         PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
         // Creating and sending Notification
         NotificationManager notificatioMng =
                 (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );

@@ -24,6 +24,7 @@ public class PopMarker extends AppCompatActivity
         implements AdapterView.OnItemClickListener {
 
     EditText memo;
+    EditText title;
     ListView pinlist;
     ImageView pinView ;
     SeekBar radius;
@@ -43,14 +44,32 @@ public class PopMarker extends AppCompatActivity
         accuracy = (SeekBar) findViewById(R.id.pop_accu);
         radius = (SeekBar) findViewById(R.id.pop_radius);
         pinsize = (SeekBar) findViewById(R.id.pop_pinsize);
+        title = (EditText) findViewById(R.id.popmk_title);
+        memo = (EditText) findViewById(R.id.frag_memo);
+        pinView =(ImageView)findViewById(R.id.new_marker);
+       // if
+
+        final TextView tv =(TextView) findViewById(R.id.popmk_maxC);
+
+        title.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                tv.setVisibility(View.INVISIBLE);
+            }
+        });
         model=Principal.model;
         radius_val=Principal.radius;
         accuracy_val=Principal.accuracy;
         pinsize_val=Principal.pinsize;
 
-        memo = (EditText) findViewById(R.id.frag_memo);
+        if (Principal.title!=null)
+            title.setText(Principal.title);
+
+        if (Principal.memo!=null)
+            memo.setText(Principal.memo);
+
         String markers[]= getResources().getStringArray(R.array.markers);
-        pinView =(ImageView)findViewById(R.id.new_marker);
+
         setImage(model-1);
         pinlist= (ListView) findViewById(R.id.list_markerop1);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,R.layout.custom_item,markers);
@@ -63,18 +82,22 @@ public class PopMarker extends AppCompatActivity
 
         int w = dm.widthPixels;
         int h = dm.heightPixels;
-        getWindow().setLayout((int) (w*.7),(int) (h *.5));
+        getWindow().setLayout((int) (w*.7),(int) (h *.6));
 
         Button save = (Button) findViewById(R.id.save_pin);
         save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (title.getText().toString().isEmpty())
+                    title.setText(R.string.popmk_empty);
+                Principal.title=title.getText().toString();
                 Intent i = new Intent();
                 i.putExtra("memo",memo.getText().toString());
                 i.putExtra("model",model);
                 i.putExtra("radius",radius_val);
                 i.putExtra("accuracy",accuracy_val);
                 i.putExtra("pinsize",pinsize_val);
+                i.putExtra("title",title.getText().toString());
                 setResult(RESULT_OK,i);
                 finish();
             }
@@ -95,9 +118,9 @@ public class PopMarker extends AppCompatActivity
     }
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            TextView temp = (TextView) view;
-            int p = position +1;
-            model = p;
+      //ljuco      TextView temp = (TextView) view;
+       //     int p = position ;
+            model = position+1;
        //     Toast.makeText(this,temp.getText() +" " +position,Toast.LENGTH_SHORT).show();
             setImage(position);
     }

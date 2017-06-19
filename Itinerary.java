@@ -13,6 +13,7 @@ public class Itinerary {
     String name;
     String date;
     List<Integer> IDs ;
+    List<Integer> Link;
     int length =0;
     int move;
 //nu stiu daca o sa vrea cu IDs
@@ -54,11 +55,11 @@ public class Itinerary {
 //        this.date=d;
 //    }
 //
-//    public void addID(int i){
-//       int u = length;
-//            IDs[u][0]=i;
-//        this.length += this.length;
-//    }
+    public void addID(int i){
+        IDs.add(i);
+        Link.add(-1);
+        this.length += this.length;
+    }
 
 //    public void addIDsec(int i, int j){
 //            IDs[i][1]=j;

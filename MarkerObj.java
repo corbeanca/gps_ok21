@@ -21,14 +21,20 @@ public class MarkerObj implements Serializable {
     String memo;
     int size=0;
     String title="(no_title)";
+    String added;
+    String last_visit;
 
     public int getPassed() {
         return passed;
     }
 
+    public void setAdded(String s){this.added=s;}
+
     public void setPassed(int passed) {
         this.passed = passed;
     }
+
+    public void set_visit(String v){this.last_visit = v;}
 
     int passed = 0;
     int accuracy;

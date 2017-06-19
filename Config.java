@@ -1,6 +1,7 @@
 package a_barbu.gps_agenda;
 import android.app.AlarmManager;
-        import android.app.PendingIntent;
+import android.app.DialogFragment;
+import android.app.PendingIntent;
         import android.content.Intent;
         import android.content.SharedPreferences;
         import android.preference.PreferenceManager;
@@ -26,6 +27,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.ParseException;
         import java.text.SimpleDateFormat;
         import java.util.Calendar;
+import java.util.Date;
 
 
 public class Config extends AppCompatActivity {
@@ -42,38 +44,50 @@ public class Config extends AppCompatActivity {
     DatabaseReference Ref = database.getInstance().getReference();
     int lang=0;
     Switch langSW;
+    static boolean startstop = true;
+    ImageView arrow;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.config);
         langSW = (Switch) findViewById(R.id.config_lang);
+        arrow = (ImageView) findViewById(R.id.config_arrow);
+
+        if (ShowPrefInt("Language")==1)
+            langSW.setChecked(true);
+        else langSW.setChecked(false);
+
         rg = (RadioGroup) findViewById(R.id.rgroup);
         default_move = (ImageView) findViewById(R.id.default_photo);
         langSW.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){TextView tl = (TextView) findViewById(R.id.config_tagL);
-                    tl.setText("Română");
-                    lang=1;}
-                else {lang =0;
-                    TextView tl = (TextView) findViewById(R.id.config_tagL);
-                    tl.setText("English");
+                TextView tag = (TextView) findViewById(R.id.config_tagL);
+                if (isChecked){
+                    tag.setText("Română");
+                    SavePref("Language",1);
+                    ((App)getApplicationContext()).changeLang("ro");
+
+                lang=1;}
+                else  {SavePref("Language",0);
+                    ((App)getApplicationContext()).changeLang("eng");
+                    lang=0;
+                    tag.setText("English");
             }}
         });
 
-
-        if (ShowPrefB("first_use")){
-        ImportSettings();
-            SavePrefb("first_use");
-            SavePrefb("go_main");}
-        else {setInfo();}
+        if (SignIn.sw==2)
+            ImportSettings();
+        else if (SignIn.sw==1){setInfo();
+  //          SavePrefb("first");
+        }
         showMove();
         setupSaveButton();
     }
 
     private void setInfo() {
-        EditText h1 = (EditText) findViewById(R.id.hour_start);
-        EditText h2 = (EditText) findViewById(R.id.hour_stop);
+        TextView h1 = (TextView) findViewById(R.id.hour_start);
+        TextView h2 = (TextView) findViewById(R.id.hour_stop);
 
         st = showH(1);
         h1.setText(st);
@@ -82,17 +96,26 @@ public class Config extends AppCompatActivity {
         showMove();
     }
 
-    private void setupSaveButton() {
-        Button save = (Button) findViewById(R.id.button2);
+    public void showClock(View v){
+        if (startstop)
+            arrow.setImageResource(R.mipmap.arrow_down);
+         else   arrow.setImageResource(R.mipmap.arrow_up);
 
+        DialogFragment newFragment = new TimePickerFragment();
+        newFragment.show(getFragmentManager(),"TimePicker");
+
+    }
+
+    private void setupSaveButton() {
+        Button save = (Button) findViewById(R.id.config_done);
 
         save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(Config.this, "Settings saved!", Toast.LENGTH_SHORT).show();
-                EditText h1 = (EditText) findViewById(R.id.hour_start);
+                TextView h1 = (TextView) findViewById(R.id.hour_start);
                 hour_s1 = h1.getText().toString();
-                EditText h2 = (EditText) findViewById(R.id.hour_stop);
+                TextView h2 = (TextView) findViewById(R.id.hour_stop);
                 hour_s2 = h2.getText().toString();
                 //adaugat conditie parsare timp
                 try {if (hour_s1  != null && hour_s2 != null){
@@ -122,12 +145,11 @@ public class Config extends AppCompatActivity {
         DatabaseReference Rstop= Ref3.child("h_stop");
         DatabaseReference Rmove= Ref3.child("Movement");
 
-
         Rstart.addListenerForSingleValueEvent(new ValueEventListener() {
                                                    @Override
                                                    public void onDataChange(DataSnapshot dataSnapshot) {
                                                        hour_s1 = dataSnapshot.getValue(String.class);
-                                                       EditText h1 = (EditText) findViewById(R.id.hour_start);
+                                                       TextView h1 = (TextView) findViewById(R.id.hour_start);
                                                        h1.setText(hour_s1);
                                                    }
                                                   @Override
@@ -138,7 +160,7 @@ public class Config extends AppCompatActivity {
                                                    @Override
                                                    public void onDataChange(DataSnapshot dataSnapshot) {
                                                        hour_s2 = dataSnapshot.getValue(String.class);
-                                                       EditText h2 = (EditText) findViewById(R.id.hour_stop);
+                                                       TextView h2 = (TextView) findViewById(R.id.hour_stop);
                                                        h2.setText(hour_s2);
 
                                                    }
@@ -185,8 +207,6 @@ public class Config extends AppCompatActivity {
                                                   }
                                               });
 
-
-
             Toast.makeText(Config.this, "Settings have been imported ", Toast.LENGTH_LONG).show();
 
     }
@@ -199,6 +219,19 @@ public class Config extends AppCompatActivity {
         Ref2.child("Language").setValue(lang);
 
     }
+
+    public void set24(View v){
+            hour_s1="00:00";
+            hour_s2="23:59";
+        TextView h1 = (TextView) findViewById(R.id.hour_start);
+        TextView h2 = (TextView) findViewById(R.id.hour_stop);
+
+        h1.setText(hour_s1);
+        h2.setText(hour_s2);
+
+
+    }
+
 
     private void startService() {
         Calendar calendar = Calendar.getInstance();
@@ -247,6 +280,21 @@ public class Config extends AppCompatActivity {
         editor.putString("hour_stop", hour_s2);
         // vreau cu commit in loc de apply ca sa mi modifice instant programul
         editor.commit();
+
+        Date d1 = null;
+        Date d2 = null;
+        try {
+            d1 = set1.parse(hour_s1);
+            d2 = set2.parse(hour_s2);
+        }
+        catch (ParseException e){
+            //ceva
+        }
+
+        GpsService.start = d1;
+        GpsService.stop = d2;
+
+
     }
 
     private String showH(int i) {

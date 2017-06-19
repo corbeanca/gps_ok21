@@ -46,7 +46,8 @@ public class SignIn extends AppCompatActivity {
     static String Email ;
     static Uri Photo;
     static boolean first;
-    static boolean out = false;
+    static int sw;
+    String pres;
 //    String em = "alexandrubarbu93@gmail,com";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,32 +60,25 @@ public class SignIn extends AppCompatActivity {
            // finish();
             return; // add this to prevent from doing unnecessary stuffs
         }
-
+        sw=0;
         mAuth = FirebaseAuth.getInstance();
         mGoogleBtn = (SignInButton) findViewById( R.id.googleBtn);
-        first = ShowPrefB("first_use");
-
         mAuthListener = new FirebaseAuth.AuthStateListener()
         {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+//                first=ShowPrefB("first");
 
                 if( firebaseAuth.getCurrentUser() != null ) {
-                    if (first) {
-                      //nu e pentru aici. ar trebui pus unde face scrierea de 'first_use'  \/
-                        //  Toast.makeText(SignIn.this, "config, user nou", Toast.LENGTH_SHORT).show();
+                    if (sw==1) {
 
-                        if(!out)
-                            signOut();
+                      //nu e pentru aici. ar trebui pus unde face scrierea de 'first_use'  \/
                         startActivity(new Intent(SignIn.this, Config.class));
 
+                    } else if(sw==2) {
 
-                    } else {
-
-
-
-
-                        Toast.makeText(SignIn.this, "welcome back", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignIn.this, "Welcome back", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignIn.this, "User present. Settings have been imported!", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(SignIn.this, Principal.class));
 
                     }
@@ -112,7 +106,6 @@ public class SignIn extends AppCompatActivity {
             }
         });
     }
-
     private boolean ShowPrefB(String key) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(key,true);
@@ -125,34 +118,34 @@ public class SignIn extends AppCompatActivity {
     }
 
     private void signIn() {
+        if (mGoogleApiClient.hasConnectedApi(Auth.GOOGLE_SIGN_IN_API)) {
+            mGoogleApiClient.clearDefaultAccountAndReconnect();
+        }
         Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, RC_SIGN_IN);
-    }
-
-    public static void signOut() {
-        mAuth.signOut();
-        Auth.GoogleSignInApi.signOut(mGoogleApiClient);
-
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             if (result.isSuccess()) {
 
-
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = result.getSignInAccount();
+                Email = account.getEmail();
+                String em = Email.replace(".", ",");
+                Email = em;
 
                 firebaseAuthWithGoogle(account);
+              //
 
             } else {
                 // Google Sign In failed, update UI appropriately
-
+                Toast.makeText(SignIn.this, "Google SignIn failed. Try again!", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, SignIn.class));
             }
         }
     }
@@ -175,9 +168,8 @@ public class SignIn extends AppCompatActivity {
                         SavePref("Name",Name);
                         SavePref("Email",Email);
                         SavePref("Photo",Photo.toString());
-
-                        first = CheckPresent();
-
+sw=2;
+         //               first = CheckPresent();
                         if (!task.isSuccessful()) {
                             Log.w(TAG, "signInWithCredential", task.getException());
                             Toast.makeText(SignIn.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
@@ -201,14 +193,26 @@ public class SignIn extends AppCompatActivity {
     }
 
     public boolean CheckPresent (){
-        DatabaseReference ref_First = Ref.child(Email).child("present");
-
-        if (ref_First.equals("true")){
+        DatabaseReference Rstart= Ref.child(Email).child("present");
+        Rstart.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                pres = dataSnapshot.getValue(String.class);
+//                TextView h1 = (TextView) findViewById(R.id.hour_start);
+//                h1.setText(hour_s1);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
+        if (pres.equals("true")){
+                sw=2;
                 return false;
                 }
             else
-                {ref_First.setValue("true");
-                    SavePref("first_use");
+                {Ref.child(Email).child("present").setValue("true");
+                    sw=1;
+                    Toast.makeText(SignIn.this, "Welcome! Configure the settings ", Toast.LENGTH_SHORT).show();
                 return true;
         }
     }

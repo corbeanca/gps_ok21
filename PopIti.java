@@ -91,8 +91,8 @@ public class PopIti extends AppCompatActivity
         itineraries = importItinerary();
 
 
-//        if (Principal.listaItinener != null) {
-//            itineraries = Principal.listaItinener;
+//        if (Principal.listaItinerarii != null) {
+//            itineraries = Principal.listaItinerarii;
 //        } else {
 //            itineraries = new ArrayList<>();
 //

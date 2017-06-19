@@ -1,6 +1,5 @@
 package a_barbu.gps_agenda;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -35,7 +34,7 @@ public class Preferences extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.fragment_pref);
+        setContentView(R.layout.preferences);
         rg_batt = (RadioGroup) findViewById(R.id.rg_bat);
         String colors[] = getResources().getStringArray(R.array.online_color);
         String shapes[] = getResources().getStringArray(R.array.online_shape);
